@@ -3,12 +3,14 @@ import { KittenRoom } from './KittenRoom.js'
 import type { CreateRoomOptions, JoinRoomOptions, RoomEvent, RoomResponse } from './types.js'
 
 export class KittenClient {
-  private client: Client
+  private readonly client: Client
   private sessionId: string | null = null
   private room: KittenRoom | null = null
 
-  constructor(private readonly url: string) {
-    this.client = new Client({ brokerURL: url })
+  constructor(urlOrClient: string | Client) {
+    this.client = typeof urlOrClient === 'string'
+      ? new Client({ brokerURL: urlOrClient })
+      : urlOrClient
   }
 
   connect(): Promise<void> {
@@ -67,7 +69,7 @@ export class KittenClient {
         const event: RoomEvent = JSON.parse(msg.body) as RoomEvent
 
         if (event.type === 'PLAYER_JOINED') {
-          const joined = event.room.players.find(p => !p.host && p.id === this.sessionId)
+          const joined = event.room.players.find(p => p.id === this.sessionId)
           if (joined) {
             sub.unsubscribe()
             const room = this._initRoom(event.room)
